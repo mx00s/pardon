@@ -7,3 +7,4 @@ Pardon provides:
 - [ ] a dynamic policy interface that enables the caller to adapt the retry schedule according to upstream backpressure
 - [ ] context about timeouts and retry attempts are returned along with the main operation's eventual result so the caller can react appropriately
 - [ ] both sync and async support
+- [ ] nostd feature flag
