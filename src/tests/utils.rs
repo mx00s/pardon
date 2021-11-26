@@ -150,6 +150,10 @@ trait IClock {
     fn sleep(&mut self, duration: &Self::Duration);
 }
 
+// TODO: implement two test clocks
+//   1. use instant and duration types that are susceptible to overflow, like std::time::{Instant, Duration}
+//   2. truly monotonic clock in which instant and duration types are no susceptible to overflow
+
 struct TestClock {
     now: TestInstant,
 }
