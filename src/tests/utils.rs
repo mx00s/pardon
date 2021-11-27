@@ -21,6 +21,19 @@ impl FallibleOp {
     fn new(times_to_fail: u8) -> Self {
         Self { times_to_fail }
     }
+
+    fn verify_op_fails_specified_number_of_times_and_then_succeeds<TClock>(
+        mut clock: TClock,
+        fail_count: u8,
+    ) where
+        TClock: IClock,
+    {
+        let mut op = Self::new(fail_count);
+        for _ in 0..fail_count {
+            assert!(op.run(&mut clock).is_err());
+        }
+        assert!(op.run(&mut clock).is_ok());
+    }
 }
 
 impl<T> TestOperation<T> for FallibleOp
@@ -42,12 +55,8 @@ where
 
 proptest! {
     #[test]
-    fn fallible_op_fails_expected_number_of_times_and_then_succeeds(mut clock: TestClock, fail_count: u8) {
-        let mut op = FallibleOp::new(fail_count);
-        for _ in 0..fail_count {
-            assert!(op.run(&mut clock).is_err());
-        }
-        assert!(op.run(&mut clock).is_ok());
+    fn fallible_op_fails_specified_number_of_times_and_then_succeeds(mut clock: TestClock, fail_count: u8) {
+        FallibleOp::verify_op_fails_specified_number_of_times_and_then_succeeds(clock, fail_count);
     }
 }
 
@@ -105,7 +114,6 @@ proptest! {
 
 // TODO: add a `BackpressureOp` to support implementing a dynamic retry scheduling policy
 
-// TODO: implement an injectable clock
 trait IInstant:
     Clone
     + Eq
