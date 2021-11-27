@@ -42,10 +42,9 @@ where
 
 proptest! {
     #[test]
-    fn fallible_op_fails_expected_number_of_times_and_then_succeeds(n: u8) {
-        let mut op = FallibleOp::new(n);
-        let mut clock = TestClock::default();
-        for _ in 0..n {
+    fn fallible_op_fails_expected_number_of_times_and_then_succeeds(mut clock: TestClock, fail_count: u8) {
+        let mut op = FallibleOp::new(fail_count);
+        for _ in 0..fail_count {
             assert!(op.run(&mut clock).is_err());
         }
         assert!(op.run(&mut clock).is_ok());
@@ -99,8 +98,8 @@ where
 proptest! {
     #[test]
     #[ignore = "Adding an arbitrary latency to the current time currently panics on overflow"]
-    fn high_latency_op_takes_at_least_the_specified_latency_to_return(latency: TestDuration) {
-        HighLatencyOp::verify_op_takes_at_least_specified_latency_to_return(TestClock::default(), latency);
+    fn high_latency_op_takes_at_least_the_specified_latency_to_return(clock: TestClock, latency: TestDuration) {
+        HighLatencyOp::verify_op_takes_at_least_specified_latency_to_return(clock, latency);
     }
 }
 
@@ -170,6 +169,7 @@ trait IClock {
 //   1. use instant and duration types that are susceptible to overflow, like std::time::{Instant, Duration}
 //   2. truly monotonic clock in which instant and duration types are no susceptible to overflow
 
+#[derive(Arbitrary, Debug)]
 struct TestClock {
     now: TestInstant,
 }
