@@ -167,10 +167,17 @@ impl Sub<TestInstant> for TestInstant {
 trait IClock {
     type Instant: IInstant<Duration = Self::Duration>;
     type Duration: IDuration<Instant = Self::Instant>;
+    type BigUnsigned: num_bigint::ToBigUint;
 
+    /// Returns current instant according to this clock.
     fn now(&self) -> &Self::Instant;
 
-    fn sleep(&mut self, duration: &Self::Duration);
+    /// Sleeps for the specified duration of time.
+    ///
+    /// Implementations for testing purposes are not expected to actually sleep.
+    ///
+    /// Returns an infinite precision value indicating how many times the internal time value overflowed.
+    fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned;
 }
 
 // TODO: implement two test clocks
@@ -193,13 +200,15 @@ impl Default for StdTimeTestClock {
 impl IClock for StdTimeTestClock {
     type Instant = TestInstant;
     type Duration = TestDuration;
+    type BigUnsigned = num_bigint::BigUint;
 
     fn now(&self) -> &Self::Instant {
         &self.now
     }
 
-    fn sleep(&mut self, duration: &Self::Duration) {
-        // TODO: deal with unwrap, e.g. by overflowing or saturating
+    fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned {
+        // TODO: deal with unwrap by tracking the number of overflows of internal time value
         self.now = (self.now + duration.clone()).unwrap();
+        0u8.into()
     }
 }
