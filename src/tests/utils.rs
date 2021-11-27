@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub};
 
-use proptest::{prop_assert, proptest};
+use proptest::proptest;
 use proptest_derive::Arbitrary;
 
 trait TestOperation<TClock>
@@ -52,19 +52,34 @@ proptest! {
     }
 }
 
-struct HighLatencyOp<T>
+struct HighLatencyOp<TClock>
 where
-    T: IClock,
+    TClock: IClock,
 {
-    latency: T::Duration,
+    latency: TClock::Duration,
 }
 
-impl<T> HighLatencyOp<T>
+impl<TClock> HighLatencyOp<TClock>
 where
-    T: IClock,
+    TClock: IClock,
 {
-    fn new(latency: T::Duration) -> Self {
+    fn new(latency: TClock::Duration) -> Self {
         Self { latency }
+    }
+
+    fn verify_op_takes_at_least_specified_latency_to_return(
+        mut clock: TClock,
+        latency: TClock::Duration,
+    ) {
+        let mut op = Self::new(latency.clone());
+
+        // TODO: make a stopwatch abstraction
+        let start_time = clock.now().clone();
+        op.run(&mut clock).unwrap();
+        let stop_time = clock.now().clone();
+
+        let elapsed = (stop_time - start_time).expect("TestClock is monotonic");
+        assert!(elapsed >= latency);
     }
 }
 
@@ -85,21 +100,22 @@ proptest! {
     #[test]
     #[ignore = "Adding an arbitrary latency to the current time currently panics on overflow"]
     fn high_latency_op_takes_at_least_the_specified_latency_to_return(latency: TestDuration) {
-        let mut op = HighLatencyOp::new(latency);
-        let mut clock = TestClock::default();
-
-        let start_time = clock.now().clone();
-        op.run(&mut clock).unwrap();
-        let elapsed: TestDuration = (*clock.now() - start_time).expect("TestClock is monotonic");
-
-        prop_assert!(elapsed >= latency);
+        HighLatencyOp::verify_op_takes_at_least_specified_latency_to_return(TestClock::default(), latency);
     }
 }
 
 // TODO: add a `BackpressureOp` to support implementing a dynamic retry scheduling policy
 
 // TODO: implement an injectable clock
-trait IInstant: Clone + Eq + Ord {}
+trait IInstant:
+    Clone
+    + Eq
+    + Ord
+    + Add<Self::Duration, Output = Option<Self>>
+    + Sub<Self, Output = Option<Self::Duration>>
+{
+    type Duration: IDuration<Instant = Self>;
+}
 
 #[derive(Arbitrary, Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
 struct TestInstant(std::time::Instant);
@@ -110,12 +126,12 @@ impl TestInstant {
     }
 }
 
-impl IInstant for TestInstant {}
+impl IInstant for TestInstant {
+    type Duration = TestDuration;
+}
 
 trait IDuration: Clone + Eq + Ord + Sized {
-    type Instant: IInstant
-        + Add<Self, Output = Option<Self::Instant>>
-        + Sub<Self::Instant, Output = Option<Self>>;
+    type Instant: IInstant<Duration = Self>;
 }
 
 #[derive(Arbitrary, Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
@@ -142,7 +158,7 @@ impl Sub<TestInstant> for TestInstant {
 }
 
 trait IClock {
-    type Instant: IInstant;
+    type Instant: IInstant<Duration = Self::Duration>;
     type Duration: IDuration<Instant = Self::Instant>;
 
     fn now(&self) -> &Self::Instant;
