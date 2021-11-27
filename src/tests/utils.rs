@@ -55,7 +55,7 @@ where
 
 proptest! {
     #[test]
-    fn fallible_op_fails_specified_number_of_times_and_then_succeeds(mut clock: TestClock, fail_count: u8) {
+    fn fallible_op_fails_specified_number_of_times_and_then_succeeds(mut clock: StdTimeTestClock, fail_count: u8) {
         FallibleOp::verify_op_fails_specified_number_of_times_and_then_succeeds(clock, fail_count);
     }
 }
@@ -107,7 +107,7 @@ where
 proptest! {
     #[test]
     #[ignore = "Adding an arbitrary latency to the current time currently panics on overflow"]
-    fn high_latency_op_takes_at_least_the_specified_latency_to_return(clock: TestClock, latency: TestDuration) {
+    fn high_latency_op_takes_at_least_the_specified_latency_to_return(clock: StdTimeTestClock, latency: TestDuration) {
         HighLatencyOp::verify_op_takes_at_least_specified_latency_to_return(clock, latency);
     }
 }
@@ -174,15 +174,15 @@ trait IClock {
 }
 
 // TODO: implement two test clocks
-//   1. use instant and duration types that are susceptible to overflow, like std::time::{Instant, Duration}
-//   2. truly monotonic clock in which instant and duration types are no susceptible to overflow
+//   - [x] use instant and duration types that are susceptible to overflow, like std::time::{Instant, Duration}
+//   - [ ] truly monotonic clock in which instant and duration types are not susceptible to overflow
 
 #[derive(Arbitrary, Debug)]
-struct TestClock {
+struct StdTimeTestClock {
     now: TestInstant,
 }
 
-impl Default for TestClock {
+impl Default for StdTimeTestClock {
     fn default() -> Self {
         Self {
             now: TestInstant::now(),
@@ -190,7 +190,7 @@ impl Default for TestClock {
     }
 }
 
-impl IClock for TestClock {
+impl IClock for StdTimeTestClock {
     type Instant = TestInstant;
     type Duration = TestDuration;
 
