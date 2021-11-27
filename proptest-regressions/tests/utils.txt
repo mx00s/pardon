@@ -4,4 +4,4 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc 8a600db14d7cc8b5e21da2ae0646bc7f6a001337e17f44e6449e7fcd634be26c # shrinks to latency = TestDuration(9223372036853411311.530078524s)
+cc 82c172c1f6d856c2c8593ea488eef324c9b9cf59b8aef4732f17c4fd491247ce # shrinks to clock = StdTimeTestClock { now: TestInstant(Instant { tv_sec: 1367832, tv_nsec: 455529339 }) }, latency = TestDuration(9223372036853407975.544470661s)
