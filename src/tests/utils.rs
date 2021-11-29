@@ -214,6 +214,7 @@ impl IMonotonicClock for MonotonicTestClock {
 
 // Example production `IMonotonicClock`.
 // TODO: add docs that mention the overflow edge cases that prompted using `prop_assume!`.
+#[derive(Debug)]
 struct MonotonicClock;
 
 impl IInstant for std::time::Instant {
@@ -246,6 +247,7 @@ impl IMonotonicClock for MonotonicClock {
     /// It's unclear if any unexpected behavior could happen if `now() + duration` overflows,
     /// but the implementation makes a best effort to catch, report, and forward panics for
     /// potential edge cases like this.
+    #[tracing::instrument]
     fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned {
         // In principle `std::thread::sleep` *might* panic, depending on the platform-specific implementation,
         // e.g. perhaps if the current time plus the duration would overflow the clock.
