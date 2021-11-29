@@ -119,40 +119,12 @@ trait IInstant: Clone + Eq + Ord {
     fn checked_add(&self, duration: Self::Duration) -> Option<Self>;
 }
 
-#[derive(Arbitrary, Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
-struct TestInstant(std::time::Instant);
-
-impl TestInstant {
-    fn now() -> Self {
-        Self(std::time::Instant::now())
-    }
-}
-
-impl IInstant for TestInstant {
-    type Duration = TestDuration;
-
-    fn checked_duration_since(&self, earlier: Self) -> Option<Self::Duration> {
-        self.0.checked_duration_since(earlier.0).map(TestDuration)
-    }
-
-    fn checked_add(&self, duration: Self::Duration) -> Option<Self> {
-        self.0.checked_add(duration.0).map(TestInstant)
-    }
-}
-
 /// Amount of time elapsed.
 ///
 /// Conceptually, this is the amount of distance between two points on a timeline.
 trait IDuration: Clone + Eq + Ord + Sized {
     /// Preferred `IInstant` type to use in conjunction with this duration type.
     type Instant: IInstant<Duration = Self>;
-}
-
-#[derive(Arbitrary, Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
-struct TestDuration(std::time::Duration);
-
-impl IDuration for TestDuration {
-    type Instant = TestInstant;
 }
 
 /// Monotonically non-decreasing clock.
@@ -180,20 +152,20 @@ trait IMonotonicClock {
 
 #[derive(Arbitrary, Debug)]
 struct MonotonicTestClock {
-    now: TestInstant,
+    now: std::time::Instant,
 }
 
 impl Default for MonotonicTestClock {
     fn default() -> Self {
         Self {
-            now: TestInstant::now(),
+            now: std::time::Instant::now(),
         }
     }
 }
 
 impl IMonotonicClock for MonotonicTestClock {
-    type Instant = TestInstant;
-    type Duration = TestDuration;
+    type Instant = std::time::Instant;
+    type Duration = std::time::Duration;
     type BigUnsigned = num_bigint::BigUint;
 
     fn now(&self) -> Self::Instant {
