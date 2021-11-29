@@ -4,4 +4,4 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc 228782ec458ea622d1d1d1c0259da39e09d4689df68cda8a3a551896f59437bc # shrinks to mut op = HighLatencyOp { latency: TestDuration(9223372036853251957.409079361s) }, clock = MonotonicTestClock { now: TestInstant(Instant { tv_sec: 1523850, tv_nsec: 590920639 }) }
+cc 2a8e25d3456e32b38e8f68eac73e6fb7f446eea87cc38abff9b7cb1d1ae3a432 # shrinks to mut op = HighLatencyOp { latency: 9223372036853219647.703443761s }, mut clock = MonotonicTestClock { now: Instant { tv_sec: 1556160, tv_nsec: 296556239 } }
