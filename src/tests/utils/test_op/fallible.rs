@@ -2,7 +2,7 @@ use crate::{tests::utils::MonotonicTestClock, traits::IMonotonicClock};
 
 use super::TestOp;
 
-use proptest::proptest;
+use proptest::{prop_assert, proptest};
 use proptest_derive::Arbitrary;
 
 /// `TestOperation` that fails for some number of runs and then succeeds.
@@ -32,8 +32,8 @@ proptest! {
     #[test]
     fn fails_specified_number_of_times_and_then_succeeds(mut op: FallibleOp, mut clock: MonotonicTestClock) {
         for _ in 0..op.times_to_fail {
-            assert!(op.run(&mut clock).is_err());
+            prop_assert!(op.run(&mut clock).is_err());
         }
-        assert!(op.run(&mut clock).is_ok());
+        prop_assert!(op.run(&mut clock).is_ok());
     }
 }
