@@ -30,7 +30,7 @@ where
 proptest! {
     #[test]
     fn takes_at_least_the_specified_latency_to_return(mut op: HighLatencyOp<MonotonicTestClock>, mut clock: MonotonicTestClock) {
-        prop_assume!(clock.now().checked_add(op.latency).is_some(), "Clock should not overflow");
+        // prop_assume!(clock.now().checked_add(op.latency).is_some(), "Clock should not overflow");
 
         let (duration, _result) = op.timed_run(&mut clock);
         prop_assert!(duration >= op.latency, "Actual duration: {:?}", duration);
