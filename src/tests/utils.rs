@@ -1,4 +1,4 @@
-use proptest::{prop_assert, proptest};
+use proptest::{prop_assert, prop_assume, proptest};
 use proptest_derive::Arbitrary;
 
 /// Any operation for which the time it takes to execute is significant.
@@ -97,10 +97,11 @@ where
 
 proptest! {
     #[test]
-    #[ignore = "Adding an arbitrary latency to the current time currently panics on overflow"]
     fn high_latency_op_takes_at_least_the_specified_latency_to_return(mut op: HighLatencyOp<MonotonicTestClock>, mut clock: MonotonicTestClock) {
+        prop_assume!(clock.now().checked_add(op.latency).is_some(), "Clock should not overflow");
+
         let (duration, _result) = op.timed_run(&mut clock);
-        prop_assert!(duration >= op.latency);
+        prop_assert!(duration >= op.latency, "Actual duration: {:?}", duration);
     }
 }
 
@@ -172,6 +173,8 @@ trait IMonotonicClock {
     /// Implementations for testing purposes are not expected to actually sleep.
     ///
     /// Returns an infinite precision value indicating how many times the internal time value overflowed.
+    // TODO: consider not returning anything and permitting panics, e.g. for overflow cases, because
+    // an overflow would violate non-decreasing monotonicity anyway.
     fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned;
 }
 
@@ -198,16 +201,19 @@ impl IMonotonicClock for MonotonicTestClock {
     }
 
     fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned {
-        // TODO: deal with unwrap by tracking the number of overflows of internal time value
         let start_time = self.now();
         match start_time.checked_add(*duration) {
-            Some(_instant) => 0u8.into(),
+            Some(instant) => {
+                self.now = instant;
+                0u8.into()
+            }
             None => todo!("deal with overflow case..."),
         }
     }
 }
 
 // Example production `IMonotonicClock`.
+// TODO: add docs that mention the overflow edge cases that prompted using `prop_assume!`.
 struct MonotonicClock;
 
 impl IInstant for std::time::Instant {
@@ -237,13 +243,19 @@ impl IMonotonicClock for MonotonicClock {
 
     /// Implemented using `std::thread::sleep`, which has platform-specific behavior.
     ///
-    /// It's unclear if any unexpected behavior could happen if `now + duration` overflows,
-    /// but the implementation assumes no such overflow occurs.
+    /// It's unclear if any unexpected behavior could happen if `now() + duration` overflows,
+    /// but the implementation makes a best effort to catch, report, and forward panics for
+    /// potential edge cases like this.
     fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned {
-        std::thread::sleep(*duration);
-        // TODO: attempt to anticipate overflow scenario so returned
-        // value is accurate; may require testing overflow scenario on
-        // real systems
+        // In principle `std::thread::sleep` *might* panic, depending on the platform-specific implementation,
+        // e.g. perhaps if the current time plus the duration would overflow the clock.
+        let sleep = || std::thread::sleep(*duration);
+        if let Err(panic) = std::panic::catch_unwind(sleep) {
+            tracing::error!(?panic);
+            panic!("{:?}", panic);
+        }
+
+        // assume no uncaught problematic scenario, e.g. clock overflow
         0u8.into()
     }
 }
