@@ -26,7 +26,6 @@ pub trait IDuration: Clone + Eq + Ord + Sized {
 pub trait IMonotonicClock {
     type Instant: IInstant<Duration = Self::Duration>;
     type Duration: IDuration<Instant = Self::Instant>;
-    type BigUnsigned;
 
     /// Returns current instant according to this clock.
     fn now(&self) -> Self::Instant;
@@ -34,9 +33,5 @@ pub trait IMonotonicClock {
     /// Sleeps for the specified duration of time.
     ///
     /// Implementations for testing purposes are not expected to actually sleep.
-    ///
-    /// Returns an infinite precision value indicating how many times the internal time value overflowed.
-    // TODO: consider not returning anything and permitting panics, e.g. for overflow cases, because
-    // an overflow would violate non-decreasing monotonicity anyway.
-    fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned;
+    fn sleep(&mut self, duration: &Self::Duration);
 }

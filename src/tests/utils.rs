@@ -22,18 +22,16 @@ impl Default for MonotonicTestClock {
 impl IMonotonicClock for MonotonicTestClock {
     type Instant = std::time::Instant;
     type Duration = std::time::Duration;
-    type BigUnsigned = num_bigint::BigUint;
 
     fn now(&self) -> Self::Instant {
         self.now
     }
 
-    fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned {
+    fn sleep(&mut self, duration: &Self::Duration) {
         let start_time = self.now();
         match start_time.checked_add(*duration) {
             Some(instant) => {
                 self.now = instant;
-                0u8.into()
             }
             None => todo!("deal with overflow case..."),
         }
@@ -64,7 +62,6 @@ impl IDuration for std::time::Duration {
 impl IMonotonicClock for MonotonicClock {
     type Instant = std::time::Instant;
     type Duration = std::time::Duration;
-    type BigUnsigned = num_bigint::BigUint;
 
     fn now(&self) -> Self::Instant {
         Self::Instant::now()
@@ -73,19 +70,15 @@ impl IMonotonicClock for MonotonicClock {
     /// Implemented using `std::thread::sleep`, which has platform-specific behavior.
     ///
     /// It's unclear if any unexpected behavior could happen if `now() + duration` overflows,
-    /// but the implementation makes a best effort to catch, report, and forward panics for
-    /// potential edge cases like this.
+    /// but the implementation makes a best effort to catch and report panics for theoretical
+    /// edge cases like this.
     #[tracing::instrument]
-    fn sleep(&mut self, duration: &Self::Duration) -> Self::BigUnsigned {
+    fn sleep(&mut self, duration: &Self::Duration) {
         // In principle `std::thread::sleep` *might* panic, depending on the platform-specific implementation,
         // e.g. perhaps if the current time plus the duration would overflow the clock.
         let sleep = || std::thread::sleep(*duration);
         if let Err(panic) = std::panic::catch_unwind(sleep) {
             tracing::error!(?panic);
-            panic!("{:?}", panic);
         }
-
-        // assume no uncaught problematic scenario, e.g. clock overflow
-        0u8.into()
     }
 }
