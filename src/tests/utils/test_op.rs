@@ -3,6 +3,8 @@ mod high_latency;
 
 use crate::traits::{IInstant, IMonotonicClock};
 
+// TODO: add a `BackpressureOp` to support implementing a dynamic retry scheduling policy
+
 /// Any operation for which the time it takes to execute is significant.
 ///
 /// A mutable `IMonotonicClock` is injected into all functions that run

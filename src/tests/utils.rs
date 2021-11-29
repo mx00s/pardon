@@ -4,8 +4,6 @@ use crate::traits::{IDuration, IInstant, IMonotonicClock};
 
 use proptest_derive::Arbitrary;
 
-// TODO: add a `BackpressureOp` to support implementing a dynamic retry scheduling policy
-
 #[derive(Arbitrary, Debug)]
 struct MonotonicTestClock {
     now: std::time::Instant,

@@ -1,6 +1,6 @@
 /// Intantenous moment in time.
 ///
-/// Conceptually, this is a point on a continuous timeline.
+/// Conceptually, this is a point on a timeline.
 pub trait IInstant: Clone + Eq + Ord {
     /// Preferred `IDuration` type to use in conjunction with this instant type.
     type Duration: IDuration<Instant = Self>;
@@ -10,9 +10,10 @@ pub trait IInstant: Clone + Eq + Ord {
     fn checked_add(&self, duration: Self::Duration) -> Option<Self>;
 }
 
-/// Amount of time elapsed.
+/// Measure of elapsed time.
 ///
-/// Conceptually, this is the amount of distance between two points on a timeline.
+/// Conceptually, this is the distance between two points on a timeline and
+/// should never be negative.
 pub trait IDuration: Clone + Eq + Ord + Sized {
     /// Preferred `IInstant` type to use in conjunction with this duration type.
     type Instant: IInstant<Duration = Self>;
@@ -35,3 +36,6 @@ pub trait IMonotonicClock {
     /// Implementations for testing purposes are not expected to actually sleep.
     fn sleep(&mut self, duration: &Self::Duration);
 }
+
+// TODO: add macro to generate proptest that tries to find a counterexample
+// to an `IMonotonicClock` impl's non-decreasing monotonicity contract.
