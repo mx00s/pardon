@@ -10,6 +10,18 @@ pub trait IInstant: Clone + Eq + Ord {
     fn checked_add(&self, duration: Self::Duration) -> Option<Self>;
 }
 
+impl IInstant for std::time::Instant {
+    type Duration = std::time::Duration;
+
+    fn checked_duration_since(&self, earlier: Self) -> Option<Self::Duration> {
+        self.checked_duration_since(earlier)
+    }
+
+    fn checked_add(&self, duration: Self::Duration) -> Option<Self> {
+        self.checked_add(duration)
+    }
+}
+
 /// Measure of elapsed time.
 ///
 /// Conceptually, this is the distance between two points on a timeline and
@@ -17,6 +29,10 @@ pub trait IInstant: Clone + Eq + Ord {
 pub trait IDuration: Clone + Eq + Ord + Sized {
     /// Preferred `IInstant` type to use in conjunction with this duration type.
     type Instant: IInstant<Duration = Self>;
+}
+
+impl IDuration for std::time::Duration {
+    type Instant = std::time::Instant;
 }
 
 /// Monotonically non-decreasing clock.

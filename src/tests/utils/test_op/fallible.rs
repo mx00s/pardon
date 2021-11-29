@@ -1,4 +1,4 @@
-use crate::{tests::utils::MonotonicTestClock, traits::IMonotonicClock};
+use crate::{tests::utils::clock::MonotonicTestClock, traits::IMonotonicClock};
 
 use super::TestOp;
 
