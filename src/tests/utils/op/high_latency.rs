@@ -12,14 +12,14 @@ where
     TClock: IMonotonicClock,
 {
     clock: TClock,
-    latency: TClock::Duration,
+    pub(crate) latency: TClock::Duration,
 }
 
 impl<TClock> HighLatencyOp<TClock>
 where
     TClock: IMonotonicClock,
 {
-    pub fn new(clock: TClock, latency: TClock::Duration) -> Self {
+    pub(crate) fn new(clock: TClock, latency: TClock::Duration) -> Self {
         Self { clock, latency }
     }
 }
