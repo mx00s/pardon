@@ -19,8 +19,8 @@ mod blocking {
         let small_overhead = Duration::from_millis(100);
         let max_expected_latency = timeout + small_overhead;
 
-        let (actual_latency, _output) =
-            HighLatencyOp::new(MonotonicClock::default(), op_latency).timed_run(());
+        let (actual_latency, _output) = HighLatencyOp::new(MonotonicClock::default(), op_latency)
+            .timed_run_with_timeout((), timeout);
 
         assert!(
             actual_latency <= max_expected_latency,
@@ -47,7 +47,7 @@ mod blocking {
                 prop_assume!(after_timeout.is_some());
             }
 
-            let (actual_latency, _output) = op.timed_run(());
+            let (actual_latency, _output) = op.timed_run_with_timeout((), timeout);
 
             prop_assert!(
                 actual_latency <= timeout,
@@ -56,6 +56,5 @@ mod blocking {
                 timeout,
             );
         }
-
     }
 }

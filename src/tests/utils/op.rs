@@ -41,4 +41,12 @@ where
         );
         (elapsed, result)
     }
+
+    fn timed_run_with_timeout(
+        &mut self,
+        input: Self::Input,
+        _timeout: TClock::Duration,
+    ) -> (TClock::Duration, Self::Output) {
+        self.timed_run(input)
+    }
 }
