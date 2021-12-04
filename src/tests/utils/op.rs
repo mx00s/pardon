@@ -14,13 +14,13 @@ trait TestOp<TClock>
 where
     TClock: IMonotonicClock,
 {
+    type Input;
     type Output;
-    type Error;
 
     fn clock(&mut self) -> &mut TClock;
 
     /// Run this operation.
-    fn run(&mut self) -> Result<Self::Output, Self::Error>;
+    fn run(&mut self, input: Self::Input) -> Self::Output;
 
     /// Measure how long it takes to run this operation.
     ///
@@ -31,9 +31,9 @@ where
     ///
     /// 1. clock violates its monotically non-decreasing contract, potentially by overflowing
     /// 1. this operation resets the clock to sometime in the past
-    fn timed_run(&mut self) -> (TClock::Duration, Result<Self::Output, Self::Error>) {
+    fn timed_run(&mut self, input: Self::Input) -> (TClock::Duration, Self::Output) {
         let start_time = self.clock().now();
-        let result = self.run();
+        let result = self.run(input);
         let stop_time = self.clock().now();
 
         let elapsed = stop_time.checked_duration_since(start_time).expect(

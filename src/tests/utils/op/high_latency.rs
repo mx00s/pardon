@@ -19,17 +19,16 @@ impl<TClock> TestOp<TClock> for HighLatencyOp<TClock>
 where
     TClock: IMonotonicClock,
 {
+    type Input = ();
     type Output = ();
-    type Error = ();
 
     fn clock(&mut self) -> &mut TClock {
         &mut self.clock
     }
 
-    fn run(&mut self) -> Result<Self::Output, Self::Error> {
+    fn run(&mut self, _input: Self::Input) -> Self::Output {
         let latency = self.latency.clone();
         self.clock().sleep(&latency);
-        Ok(())
     }
 }
 
@@ -38,7 +37,7 @@ proptest! {
     fn takes_at_least_the_specified_latency_to_return(mut op: HighLatencyOp<MonotonicTestClock>, mut clock: MonotonicTestClock) {
         prop_assume!(clock.now().checked_add(op.latency).is_some(), "Clock should not overflow");
 
-        let (duration, _result) = op.timed_run();
+        let (duration, _result) = op.timed_run(());
         prop_assert!(duration >= op.latency, "Actual duration: {:?}", duration);
     }
 }
