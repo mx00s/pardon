@@ -17,8 +17,10 @@ where
     type Output;
     type Error;
 
+    fn clock(&mut self) -> &mut TClock;
+
     /// Run this operation.
-    fn run(&mut self, clock: &mut TClock) -> Result<Self::Output, Self::Error>;
+    fn run(&mut self) -> Result<Self::Output, Self::Error>;
 
     /// Measure how long it takes to run this operation.
     ///
@@ -29,13 +31,10 @@ where
     ///
     /// 1. clock violates its monotically non-decreasing contract, potentially by overflowing
     /// 1. this operation resets the clock to sometime in the past
-    fn timed_run(
-        &mut self,
-        clock: &mut TClock,
-    ) -> (TClock::Duration, Result<Self::Output, Self::Error>) {
-        let start_time = clock.now();
-        let result = self.run(clock);
-        let stop_time = clock.now();
+    fn timed_run(&mut self) -> (TClock::Duration, Result<Self::Output, Self::Error>) {
+        let start_time = self.clock().now();
+        let result = self.run();
+        let stop_time = self.clock().now();
 
         let elapsed = stop_time.checked_duration_since(start_time).expect(
             "clocks are monotonically non-decreasing, so the elapsed time should be non-negative",
