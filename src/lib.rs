@@ -2,6 +2,7 @@
 mod tests;
 
 mod clock;
+mod timeout;
 mod traits;
 
 pub use {

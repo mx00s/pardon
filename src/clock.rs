@@ -2,7 +2,7 @@ use crate::traits::IMonotonicClock;
 
 // Example production `IMonotonicClock`.
 // TODO: add docs that mention the overflow edge cases that prompted using `prop_assume!`.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MonotonicClock;
 
 impl IMonotonicClock for MonotonicClock {

@@ -7,12 +7,21 @@ use proptest_derive::Arbitrary;
 
 /// `TestOperation` that takes at least some specified duration to run.
 #[derive(Arbitrary, Debug)]
-struct HighLatencyOp<TClock>
+pub(crate) struct HighLatencyOp<TClock>
 where
     TClock: IMonotonicClock,
 {
     clock: TClock,
     latency: TClock::Duration,
+}
+
+impl<TClock> HighLatencyOp<TClock>
+where
+    TClock: IMonotonicClock,
+{
+    pub fn new(clock: TClock, latency: TClock::Duration) -> Self {
+        Self { clock, latency }
+    }
 }
 
 impl<TClock> TestOp<TClock> for HighLatencyOp<TClock>

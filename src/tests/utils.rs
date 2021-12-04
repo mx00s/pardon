@@ -1,2 +1,2 @@
-mod clock;
-mod op;
+pub(crate) mod clock;
+pub(crate) mod op;

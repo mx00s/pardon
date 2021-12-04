@@ -1,5 +1,5 @@
-mod fallible;
-mod high_latency;
+pub(crate) mod fallible;
+pub(crate) mod high_latency;
 
 use crate::traits::{IInstant, IMonotonicClock};
 
@@ -10,7 +10,7 @@ use crate::traits::{IInstant, IMonotonicClock};
 /// A mutable `IMonotonicClock` is injected into all functions that run
 /// the operation. This enables testing with either real system time
 /// or simulatng the passage of time with a fake clock.
-trait TestOp<TClock>
+pub(crate) trait TestOp<TClock>
 where
     TClock: IMonotonicClock,
 {
