@@ -2,24 +2,43 @@ mod blocking {
     use crate::{
         tests::utils::{
             clock::MonotonicTestClock,
-            op::{high_latency::HighLatencyOp, TestOp},
+            op::{latency::LatencyOp, TestOp},
         },
-        traits::IMonotonicClock,
         MonotonicClock,
     };
 
-    use proptest::{prop_assert, prop_assume, proptest};
+    use proptest::{prop_assert_eq, prop_assume, proptest};
 
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
+
+    // Accounts for additional latency for machinery involved in managing an
+    // operation's execution.
+    const SMALL_OVERHEAD: std::time::Duration = std::time::Duration::from_millis(100);
 
     #[test]
     fn high_latency_op_with_real_clock_returns_within_specified_timeout_plus_small_overhead() {
         let op_latency = Duration::from_millis(1000);
         let timeout = Duration::from_millis(500);
-        let small_overhead = Duration::from_millis(100);
-        let max_expected_latency = timeout + small_overhead;
+        let max_expected_latency = timeout + SMALL_OVERHEAD;
 
-        let (actual_latency, _output) = HighLatencyOp::new(MonotonicClock::default(), op_latency)
+        let (actual_latency, _output) = LatencyOp::new(MonotonicClock::default(), op_latency)
+            .timed_run_with_timeout((), timeout);
+
+        assert!(
+            actual_latency <= max_expected_latency,
+            "Actual latency of {:?} exceeds expected maximum of {:?}",
+            actual_latency,
+            max_expected_latency
+        );
+    }
+
+    #[test]
+    fn low_latency_op_with_real_clock_returns_faster_than_expected_timeout_plus_small_overhead() {
+        let op_latency = Duration::from_millis(1);
+        let timeout = Duration::from_millis(500);
+        let max_expected_latency = op_latency + SMALL_OVERHEAD;
+
+        let (actual_latency, _output) = LatencyOp::new(MonotonicClock::default(), op_latency)
             .timed_run_with_timeout((), timeout);
 
         assert!(
@@ -32,29 +51,23 @@ mod blocking {
 
     proptest! {
         #[test]
-        fn high_latency_op_with_test_clock_returns_within_specified_timeout(
-            mut op: HighLatencyOp<MonotonicTestClock>,
+        fn high_latency_op_with_test_clock_returns_within_min_of_op_latency_and_timeout(
+            now: Instant,
+            latency: Duration,
             timeout: Duration,
         ) {
-            // assumptions to skip std::time overflow scenarios
+            // skip all potential std::time overflow scenarios
             {
-                let now = op.clock().now();
-
-                let after_no_timeout = now.checked_add(op.latency);
-                prop_assume!(after_no_timeout.is_some());
-
-                let after_timeout = now.checked_add(timeout);
-                prop_assume!(after_timeout.is_some());
+                let max_duration = std::cmp::max(latency, timeout);
+                prop_assume!(now.checked_add(max_duration).is_some());
             }
 
-            let (actual_latency, _output) = op.timed_run_with_timeout((), timeout);
+            let mut op = LatencyOp::new(MonotonicTestClock::from(now), latency);
 
-            prop_assert!(
-                actual_latency <= timeout,
-                "Actual latency of {:?} exceeds expected timeout of {:?}",
-                actual_latency,
-                timeout,
-            );
+            let expected_latency = std::cmp::min(op.latency, timeout);
+            let (actual_latency, _result) = op.timed_run_with_timeout((), timeout);
+
+            prop_assert_eq!(expected_latency, actual_latency);
         }
     }
 }

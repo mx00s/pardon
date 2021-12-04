@@ -4,4 +4,4 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc 519432b60d2e484d21dfa0f87582c170d39b63f0f6f8039ff544d0dec12b0e11 # shrinks to mut op = HighLatencyOp { clock: MonotonicTestClock { now: Instant { tv_sec: 2051653, tv_nsec: 435643939 } }, latency: 8599022562211833937.065245125s }, timeout = 0ns
+cc 6d38c69a9adb00393e7575ccea3e2fa9d12416bf8ba554aacf52ab931f0df23d # shrinks to now = Instant { tv_sec: 2054862, tv_nsec: 318772339 }, latency = 0ns, timeout = 1ns

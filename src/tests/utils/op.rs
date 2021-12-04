@@ -1,5 +1,5 @@
 pub(crate) mod fallible;
-pub(crate) mod high_latency;
+pub(crate) mod latency;
 
 use crate::traits::{IInstant, IMonotonicClock};
 
@@ -44,9 +44,12 @@ where
 
     fn timed_run_with_timeout(
         &mut self,
-        input: Self::Input,
-        _timeout: TClock::Duration,
-    ) -> (TClock::Duration, Self::Output) {
-        self.timed_run(input)
+        _input: Self::Input,
+        timeout: TClock::Duration,
+    ) -> (TClock::Duration, Result<Self::Output, ()>) {
+        // TODO: call `timed_run` in a way that can be interrupted
+
+        self.clock().sleep(&timeout);
+        (timeout, Err(()))
     }
 }

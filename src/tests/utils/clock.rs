@@ -7,11 +7,15 @@ pub struct MonotonicTestClock {
     now: std::time::Instant,
 }
 
+impl From<std::time::Instant> for MonotonicTestClock {
+    fn from(now: std::time::Instant) -> Self {
+        Self { now }
+    }
+}
+
 impl Default for MonotonicTestClock {
     fn default() -> Self {
-        Self {
-            now: std::time::Instant::now(),
-        }
+        Self::from(std::time::Instant::now())
     }
 }
 
