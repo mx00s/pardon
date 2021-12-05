@@ -2,7 +2,7 @@ use crate::traits::IMonotonicClock;
 
 use proptest_derive::Arbitrary;
 
-#[derive(Arbitrary, Debug)]
+#[derive(Arbitrary, Clone, Debug)]
 pub struct MonotonicTestClock {
     now: std::time::Instant,
 }

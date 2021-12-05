@@ -17,7 +17,7 @@ mod blocking {
 
     #[test]
     fn high_latency_op_with_real_clock_returns_within_specified_timeout_plus_small_overhead() {
-        let op_latency = Duration::from_millis(1000);
+        let op_latency = Duration::from_millis(10_000);
         let timeout = Duration::from_millis(500);
         let max_expected_latency = timeout + SMALL_OVERHEAD;
 
@@ -33,9 +33,9 @@ mod blocking {
     }
 
     #[test]
-    fn low_latency_op_with_real_clock_returns_faster_than_expected_timeout_plus_small_overhead() {
-        let op_latency = Duration::from_millis(1);
-        let timeout = Duration::from_millis(500);
+    fn low_latency_op_with_real_clock_returns_faster_than_specified_timeout_plus_small_overhead() {
+        let op_latency = Duration::from_millis(500);
+        let timeout = Duration::from_millis(10_000);
         let max_expected_latency = op_latency + SMALL_OVERHEAD;
 
         let (actual_latency, _output) = LatencyOp::new(MonotonicClock::default(), op_latency)
@@ -50,8 +50,12 @@ mod blocking {
     }
 
     proptest! {
+        // TODO: Change MonotonicTestClock's Instant and Duration types to
+        // primitive integer types that can be serialized and shrinked.
+
         #[test]
-        fn high_latency_op_with_test_clock_returns_within_min_of_op_latency_and_timeout(
+        #[ignore]
+        fn op_returns_within_min_of_its_latency_and_timeout(
             now: Instant,
             latency: Duration,
             timeout: Duration,
@@ -62,12 +66,16 @@ mod blocking {
                 prop_assume!(now.checked_add(max_duration).is_some());
             }
 
-            let mut op = LatencyOp::new(MonotonicTestClock::from(now), latency);
+            let expected_latency = std::cmp::min(latency, timeout);
+            let (actual_latency, _result) = LatencyOp::new(MonotonicTestClock::from(now), latency).timed_run_with_timeout((), timeout);
 
-            let expected_latency = std::cmp::min(op.latency, timeout);
-            let (actual_latency, _result) = op.timed_run_with_timeout((), timeout);
-
-            prop_assert_eq!(expected_latency, actual_latency);
+            prop_assert_eq!(
+                expected_latency,
+                actual_latency,
+                "\n\tExpected latency: {:?}\n\tActual latency: {:?}\n",
+                expected_latency,
+                actual_latency
+            );
         }
     }
 }

@@ -6,7 +6,7 @@ use proptest::{prop_assert, prop_assume, proptest};
 use proptest_derive::Arbitrary;
 
 /// `TestOperation` that takes at least some specified duration to run.
-#[derive(Arbitrary, Debug)]
+#[derive(Arbitrary, Clone, Debug)]
 pub(crate) struct LatencyOp<TClock>
 where
     TClock: IMonotonicClock,

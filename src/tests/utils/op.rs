@@ -42,14 +42,37 @@ where
         (elapsed, result)
     }
 
+    // This implementation works for the unit tests over the real monotonic clock; however,
+    // it doesn't work well with the test clock yet because there's no inherent bias toward
+    // whichever thread is *expected* to finish first with a normal clock.
     fn timed_run_with_timeout(
-        &mut self,
-        _input: Self::Input,
+        self,
+        input: Self::Input,
         timeout: TClock::Duration,
-    ) -> (TClock::Duration, Result<Self::Output, ()>) {
-        // TODO: call `timed_run` in a way that can be interrupted
+    ) -> (TClock::Duration, Result<Self::Output, ()>)
+    where
+        Self: Send + Sized + Clone + 'static,
+        <Self as TestOp<TClock>>::Input: Send + 'static,
+        <Self as TestOp<TClock>>::Output: Send + 'static,
+        <TClock as IMonotonicClock>::Duration: Send + 'static,
+    {
+        let (tx, rx) = std::sync::mpsc::channel();
 
-        self.clock().sleep(&timeout);
-        (timeout, Err(()))
+        let mut op_for_timeout = self.clone();
+        let tx_for_timeout = tx.clone();
+        std::thread::spawn(move || {
+            op_for_timeout.clock().sleep(&timeout);
+            tx_for_timeout.send((timeout, Err(()))).unwrap();
+        });
+
+        let mut op_for_run = self;
+        let tx_for_run = tx;
+        std::thread::spawn(move || {
+            std::thread::yield_now();
+            let (latency, output) = op_for_run.timed_run(input);
+            tx_for_run.send((latency, Ok(output))).unwrap()
+        });
+
+        rx.recv().unwrap()
     }
 }
