@@ -16,12 +16,13 @@ mod blocking {
     const SMALL_OVERHEAD: std::time::Duration = std::time::Duration::from_millis(100);
 
     #[test]
-    fn high_latency_op_with_real_clock_returns_within_specified_timeout_plus_small_overhead() {
+    fn high_latency_op_with_real_clock_returns_nothing_within_specified_timeout_plus_small_overhead(
+    ) {
         let op_latency = Duration::from_millis(10_000);
         let timeout = Duration::from_millis(500);
         let max_expected_latency = timeout + SMALL_OVERHEAD;
 
-        let (actual_latency, _output) = LatencyOp::new(MonotonicClock::default(), op_latency)
+        let (actual_latency, output) = LatencyOp::new(MonotonicClock::default(), op_latency)
             .timed_run_with_timeout((), timeout);
 
         assert!(
@@ -30,15 +31,17 @@ mod blocking {
             actual_latency,
             max_expected_latency
         );
+        assert!(output.is_none());
     }
 
     #[test]
-    fn low_latency_op_with_real_clock_returns_faster_than_specified_timeout_plus_small_overhead() {
+    fn low_latency_op_with_real_clock_returns_something_faster_than_specified_timeout_plus_small_overhead(
+    ) {
         let op_latency = Duration::from_millis(500);
         let timeout = Duration::from_millis(10_000);
         let max_expected_latency = op_latency + SMALL_OVERHEAD;
 
-        let (actual_latency, _output) = LatencyOp::new(MonotonicClock::default(), op_latency)
+        let (actual_latency, output) = LatencyOp::new(MonotonicClock::default(), op_latency)
             .timed_run_with_timeout((), timeout);
 
         assert!(
@@ -47,15 +50,19 @@ mod blocking {
             actual_latency,
             max_expected_latency
         );
+        assert!(output.is_some());
     }
 
     proptest! {
         // TODO: Change MonotonicTestClock's Instant and Duration types to
         // primitive integer types that can be serialized and shrinked.
 
+        // TODO: Create a ChronologicalTestClock that simulates the passage
+        // of time through a chronological sequence of significant timestamps.
+
         #[test]
         #[ignore]
-        fn op_returns_within_min_of_its_latency_and_timeout(
+        fn op_returns_expected_output_within_min_of_its_latency_and_timeout(
             now: Instant,
             latency: Duration,
             timeout: Duration,
@@ -67,7 +74,13 @@ mod blocking {
             }
 
             let expected_latency = std::cmp::min(latency, timeout);
-            let (actual_latency, _result) = LatencyOp::new(MonotonicTestClock::from(now), latency).timed_run_with_timeout((), timeout);
+            let expected_output = if latency < timeout {
+                Some(())
+            } else {
+                None
+            };
+
+            let (actual_latency, actual_output) = LatencyOp::new(MonotonicTestClock::from(now), latency).timed_run_with_timeout((), timeout);
 
             prop_assert_eq!(
                 expected_latency,
@@ -76,6 +89,8 @@ mod blocking {
                 expected_latency,
                 actual_latency
             );
+
+            prop_assert_eq!(expected_output, actual_output);
         }
     }
 }

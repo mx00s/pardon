@@ -45,34 +45,53 @@ where
     // This implementation works for the unit tests over the real monotonic clock; however,
     // it doesn't work well with the test clock yet because there's no inherent bias toward
     // whichever thread is *expected* to finish first with a normal clock.
-    fn timed_run_with_timeout(
-        self,
+    fn run_with_timeout(
+        &mut self,
         input: Self::Input,
         timeout: TClock::Duration,
-    ) -> (TClock::Duration, Result<Self::Output, ()>)
+    ) -> Option<Self::Output>
     where
-        Self: Send + Sized + Clone + 'static,
+        Self: Send + Clone + 'static,
         <Self as TestOp<TClock>>::Input: Send + 'static,
         <Self as TestOp<TClock>>::Output: Send + 'static,
-        <TClock as IMonotonicClock>::Duration: Send + 'static,
+        TClock: Clone + Send + 'static,
+        <TClock as IMonotonicClock>::Duration: Send,
     {
         let (tx, rx) = std::sync::mpsc::channel();
 
-        let mut op_for_timeout = self.clone();
+        let mut timeout_clock = self.clock().clone();
         let tx_for_timeout = tx.clone();
         std::thread::spawn(move || {
-            op_for_timeout.clock().sleep(&timeout);
-            tx_for_timeout.send((timeout, Err(()))).unwrap();
+            timeout_clock.sleep(&timeout);
+            tx_for_timeout.send(None).unwrap();
         });
 
-        let mut op_for_run = self;
-        let tx_for_run = tx;
+        let mut op = self.clone();
         std::thread::spawn(move || {
-            std::thread::yield_now();
-            let (latency, output) = op_for_run.timed_run(input);
-            tx_for_run.send((latency, Ok(output))).unwrap()
+            let output = op.run(input);
+            tx.send(Some(output)).unwrap();
         });
 
         rx.recv().unwrap()
+    }
+
+    fn timed_run_with_timeout(
+        &mut self,
+        input: Self::Input,
+        timeout: TClock::Duration,
+    ) -> (TClock::Duration, Option<Self::Output>)
+    where
+        Self: Send + Clone + 'static,
+        <Self as TestOp<TClock>>::Input: Send + 'static,
+        <Self as TestOp<TClock>>::Output: Send + 'static,
+        TClock: Clone + Send + 'static,
+        <TClock as IMonotonicClock>::Duration: Send,
+    {
+        let start_time = self.clock().now();
+        let output = self.run_with_timeout(input, timeout);
+        let end_time = self.clock().now();
+
+        let elapsed = end_time.checked_duration_since(start_time).unwrap();
+        (elapsed, output)
     }
 }
